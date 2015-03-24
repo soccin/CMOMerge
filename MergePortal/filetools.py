@@ -92,13 +92,6 @@ def getCaseList(path):
 				return set(line.strip().split()[1:])
 	raise ValueError("Missing case_list_ids line in %s" % path)
 
-'''
-case_lists/cases_all.txt
-case_lists/cases_cna.txt
-case_lists/cases_cnaseq.txt
-case_lists/cases_sequenced.txt
-'''
-
 caseFileData={ 
 	"cases_all.txt":dict(
 		stable_id="_all",
