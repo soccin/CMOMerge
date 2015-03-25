@@ -17,6 +17,21 @@ def smartOpen(pathType,mode="r"):
 		raise ValueError("Invalid filepath type <%s>" % (type(pathType)))
 	return fp
 
+def get3PathsForMerge(baseProject,cdrProject,outPath,fTuple):
+	baseFile=resolvePathToFile(
+				Path(baseProject),
+				fTuple,
+				dict(studyId=getStudyId(baseProject)))
+	cdrFile=resolvePathToFile(
+				Path(cdrProject),
+				fTuple,
+				dict(studyId=getStudyId(cdrProject)))
+	mergedFile=resolvePathToFile(
+				outPath,
+				fTuple,
+				dict(studyId=studyId))
+	return (baseFile,cdrFile,mergedFile)
+
 def rbind(fname1,fname2):
 	cin1=csv.DictReader(smartOpen(fname1),delimiter=CSVDELIM)
 	cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
