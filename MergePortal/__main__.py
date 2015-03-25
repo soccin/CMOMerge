@@ -96,24 +96,15 @@ rbindFiles=getFileTemplates("""
 for fTuple in rbindFiles:
 	print "-" * 80
 	print "fileSuffix to rbind =", fTuple
-	baseFile=resolvePathToFile(
-				basePath,
-				fTuple,
-				dict(studyId=getStudyId(baseProject)))
-	cdrFile=resolvePathToFile(
-				cdrPath,
-				fTuple,
-				dict(studyId=getStudyId(cdrProject)))
-	mergedFile=resolvePathToFile(
-				outPath,
-				fTuple,
-				dict(studyId=studyId))
+	(baseFile,cdrFile,mergedFile)=get3PathsForMerge(baseProject,cdrProject,outPath,fTuple)
 	print "baseFile =", baseFile
 	print "cdrFile =", cdrFile
 	print "mergedFile =", mergedFile
 	print
 	mergedTable=rbind(baseFile,cdrFile)
 	writeTable(mergedTable,mergedFile)
+
+cnaTuple=("data_CNA.txt",None)
 
 
 
