@@ -106,6 +106,10 @@ for fTuple in rbindFiles:
 	writeTable(mergedTable,mergedFile)
 
 cnaTuple=("data_CNA.txt",None)
+(baseFile,cdrFile,mergedFile)=get3PathsForMerge(baseProject,cdrProject,
+												studyId,outPath,cnaTuple)
+mergedTable=mergeCNAData(baseFile,cdrFile)
+writeTable(mergedTable,mergedFile)
 
 
 
