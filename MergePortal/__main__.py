@@ -96,7 +96,8 @@ rbindFiles=getFileTemplates("""
 for fTuple in rbindFiles:
 	print "-" * 80
 	print "fileSuffix to rbind =", fTuple
-	(baseFile,cdrFile,mergedFile)=get3PathsForMerge(baseProject,cdrProject,outPath,fTuple)
+	(baseFile,cdrFile,mergedFile)=get3PathsForMerge(baseProject,cdrProject,
+													studyId,outPath,fTuple)
 	print "baseFile =", baseFile
 	print "cdrFile =", cdrFile
 	print "mergedFile =", mergedFile

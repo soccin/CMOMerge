@@ -3,21 +3,11 @@ import csv
 from itertools import izip_longest
 from string import Template
 from pathlib import *
+from lib import *
 
 from globals import *
 
-def smartOpen(pathType,mode="r"):
-	if isinstance(pathType,PosixPath):
-		fp=pathType.open(mode=mode)
-	elif isinstance(pathType,str):
-		fp=open(pathType,mode=mode)
-	elif isinstance(pathType,file):
-		fp=pathType
-	else:
-		raise ValueError("Invalid filepath type <%s>" % (type(pathType)))
-	return fp
-
-def get3PathsForMerge(baseProject,cdrProject,outPath,fTuple):
+def get3PathsForMerge(baseProject,cdrProject,studyId,outPath,fTuple):
 	baseFile=resolvePathToFile(
 				Path(baseProject),
 				fTuple,
@@ -161,25 +151,6 @@ def getFileTemplates(fileLists):
 			template=None
 		files.append((fi,template))
 	return files
-
-def parseMetaData(fname):
-	if isinstance(fname,PosixPath):
-		fp=fname.open()
-	elif isinstance(fname,str):
-		fp=open(fname)
-	else:
-		raise ValueError("Unknown file/path type %s" % type(fname))
-
-	data=dict()
-	for line in fp:
-		line=line.strip()
-		pos=line.find(": ")
-		if pos>-1:
-			data[line[:(pos)]]=line[(pos+2):]
-		else:
-			raise ValueError("Invalid meta data line %s" % (line))
-
-	return data
 
 def resolvePathToFile(path,fnameTuple,templateData=dict()):
 	print "RPTF:1:", fnameTuple
