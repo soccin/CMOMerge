@@ -78,18 +78,19 @@ else:
 	(outPath / caseListDir).mkdir()
 
 basePath=Path(baseProject)
-mergePath=Path(cdrProject)
+cdrPath=Path(cdrProject)
 
 caseFiles=["cases_all.txt","cases_cna.txt","cases_cnaseq.txt","cases_sequenced.txt"]
 for caseFile in caseFiles:
 	samples=getCaseList(basePath / caseListDir / caseFile) \
-			| getCaseList(mergePath / caseListDir / caseFile)
+			| getCaseList(cdrPath / caseListDir / caseFile)
 	writeCaseLists(outPath / caseListDir, caseFile, samples, studyId)
 
 
-rbindFiles=getFileTemplates("""data_clinical.txt
-data_mutations_extended.txt
-_data_cna_hg19.seg
+rbindFiles=getFileTemplates("""
+	data_clinical.txt
+	data_mutations_extended.txt
+	_data_cna_hg19.seg
 """)
 
 print "output=", outPath, studyId
@@ -100,12 +101,12 @@ for fTuple in rbindFiles:
 				basePath,
 				fTuple,
 				dict(studyId=getStudyId(baseProject)))
-	mergeFile=resolvePathToFile(
-				mergePath,
+	cdrFile=resolvePathToFile(
+				cdrPath,
 				fTuple,
 				dict(studyId=getStudyId(cdrProject)))
 	print "baseFile =", baseFile
-	print "mergeFile =", mergeFile
+	print "cdrFile =", cdrFile
 
 
 #######################################################################
