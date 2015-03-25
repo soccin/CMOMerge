@@ -1,3 +1,5 @@
+from pathlib import *
+
 def getTumorType(projectPath):
 	return projectPath.strip("/").split("/")[-4]
 
@@ -9,3 +11,6 @@ def getInstitutionName(projectPath):
 
 def getProjectNumber(projectPath):
 	return projectPath.strip("/").split("/")[-1]
+
+def getStudyId(projectPath):
+    print Path(projectPath) / "meta_study.txt"

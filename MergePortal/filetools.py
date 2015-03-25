@@ -1,6 +1,8 @@
 import sys
 import csv
 from itertools import izip_longest
+from string import Template
+from pathlib import *
 
 from globals import *
 
@@ -39,7 +41,7 @@ def getCNADataTable(cin):
 def mergeCNAData(fname1,fname2):
 	cin1=csv.DictReader(open(fname1),delimiter=CSVDELIM)
 	cin2=csv.DictReader(open(fname2),delimiter=CSVDELIM)
-	
+
 	if cin1.fieldnames[0]!=cin2.fieldnames[0] or cin1.fieldnames[0] != "Hugo_Symbol" :
 		print >>sys.stderr
 		print >>sys.stderr, "Col1 do not match or not Gene Symbols"
@@ -92,7 +94,7 @@ def getCaseList(path):
 				return set(line.strip().split()[1:])
 	raise ValueError("Missing case_list_ids line in %s" % path)
 
-caseFileData={ 
+caseFileData={
 	"cases_all.txt":dict(
 		stable_id="_all",
 		case_list_category="all_cases_in_study",
@@ -129,10 +131,33 @@ def writeCaseLists(outDir, caseFile, samples, studyId):
 		print >>fp, "case_list_description:", data["case_list_description"]
 		print >>fp, "case_list_ids:", "\t".join(map(str,sorted(samples)))
 
+def getFileTemplates(fileLists):
+	files=[]
+	for fi in fileLists.strip().split():
+		if fi.startswith("_"):
+			template=Template("$studyId"+fi)
+		else:
+			template=None
+		files.append((fi,template))
+	return files
 
+def parseMetaData(fname):
+	if isinstance(fname,pathlib.PosixPath):
+		fp=fname.open()
+	elif isinstance(fname,str):
+		fp=open(fname)
+	else:
+		raise ValueError("Unknown file/path type %s" % type(fname))
 
+	data=dict()
+	for line in fp:
+		line=line.strip()
+		pos=line.find(": ")
+		if pos>-1:
+			data[line[:(pos-1)]]=line[(pos+2):]
+		else:
+			raise ValueError("Invalid meta data line %s" % (line))
 
-
-
+	return data
 
 

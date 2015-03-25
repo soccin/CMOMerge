@@ -1,4 +1,5 @@
 import sys
+from string import Template
 from pathlib import *
 
 from filetools import *
@@ -74,7 +75,7 @@ if outPath.exists():
 	sys.exit()
 else:
 	outPath.mkdir(parents=True)
-	(outPath / caseListDir).mkdir()	
+	(outPath / caseListDir).mkdir()
 
 basePath=Path(baseProject)
 mergePath=Path(mergeProject)
@@ -85,14 +86,31 @@ for caseFile in caseFiles:
 			| getCaseList(mergePath / caseListDir / caseFile)
 	writeCaseLists(outPath / caseListDir, caseFile, samples, studyId)
 
-'''
-data_clinical.txt
-data_CNA.txt
+
+rbindFiles=getFileTemplates("""data_clinical.txt
 data_mutations_extended.txt
+_data_cna_hg19.seg
+""")
+
+print "files to rbind", rbindFiles
+print "base=", basePath, getStudyId(baseProject)
+print "merge=", mergePath, getStudyId(mergeProject)
+print "output=", outPath, studyId
+
+
+#######################################################################
+#######################################################################
+#######################################################################
+#######################################################################
+
+
+"""
+cbind:
+	data_CNA.txt
+
 meta_CNA.txt
 meta_mutations_extended.txt
 meta_study.txt
-_data_cna_hg19.seg
 _meta_cna_hg19_seg.txt
-'''
+"""
 
