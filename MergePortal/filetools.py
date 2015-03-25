@@ -62,8 +62,8 @@ def getCNADataTable(cin):
 	return table
 
 def mergeCNAData(fname1,fname2):
-	cin1=csv.DictReader(open(fname1),delimiter=CSVDELIM)
-	cin2=csv.DictReader(open(fname2),delimiter=CSVDELIM)
+	cin1=csv.DictReader(smartOpen(fname1),delimiter=CSVDELIM)
+	cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
 
 	if cin1.fieldnames[0]!=cin2.fieldnames[0] or cin1.fieldnames[0] != "Hugo_Symbol" :
 		print >>sys.stderr
@@ -95,7 +95,6 @@ def mergeCNAData(fname1,fname2):
 		data.append(rr)
 
 	return (header,data)
-
 
 def getCaseList(path):
 	caseList=set()
