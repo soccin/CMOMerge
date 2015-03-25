@@ -93,7 +93,6 @@ rbindFiles=getFileTemplates("""
 	_data_cna_hg19.seg
 """)
 
-print "output=", outPath, studyId
 for fTuple in rbindFiles:
 	print "-" * 80
 	print "fileSuffix to rbind =", fTuple
@@ -105,8 +104,17 @@ for fTuple in rbindFiles:
 				cdrPath,
 				fTuple,
 				dict(studyId=getStudyId(cdrProject)))
+	mergedFile=resolvePathToFile(
+				outPath,
+				fTuple,
+				dict(studyId=studyId))
 	print "baseFile =", baseFile
 	print "cdrFile =", cdrFile
+	print "mergedFile =", mergedFile
+	print
+	mergedTable=rbind(baseFile,cdrFile)
+	writeTable(mergedTable,mergedFile)
+
 
 
 #######################################################################
