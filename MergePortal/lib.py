@@ -1,4 +1,5 @@
 from pathlib import *
+from filetools import *
 
 def getTumorType(projectPath):
 	return projectPath.strip("/").split("/")[-4]
@@ -13,4 +14,7 @@ def getProjectNumber(projectPath):
 	return projectPath.strip("/").split("/")[-1]
 
 def getStudyId(projectPath):
-    print Path(projectPath) / "meta_study.txt"
+	# Using new pathlib Path object (which overloads "/")
+	# for path concatentation
+    data=parseMetaData( Path(projectPath) / "meta_study.txt" )
+    return data["cancer_study_identifier"]

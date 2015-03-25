@@ -135,14 +135,14 @@ def getFileTemplates(fileLists):
 	files=[]
 	for fi in fileLists.strip().split():
 		if fi.startswith("_"):
-			template=Template("$studyId"+fi)
+			template=Template("${studyId}"+fi)
 		else:
 			template=None
 		files.append((fi,template))
 	return files
 
 def parseMetaData(fname):
-	if isinstance(fname,pathlib.PosixPath):
+	if isinstance(fname,PosixPath):
 		fp=fname.open()
 	elif isinstance(fname,str):
 		fp=open(fname)
@@ -154,10 +154,20 @@ def parseMetaData(fname):
 		line=line.strip()
 		pos=line.find(": ")
 		if pos>-1:
-			data[line[:(pos-1)]]=line[(pos+2):]
+			data[line[:(pos)]]=line[(pos+2):]
 		else:
 			raise ValueError("Invalid meta data line %s" % (line))
 
 	return data
 
+def resolvePathToFile(path,fnameTuple,templateData=dict()):
+	print "RPTF:1:", fnameTuple
+	if fnameTuple[1]:
+		print "RPTF:2:", templateData, fnameTuple[1].template
+		fname=fnameTuple[1].substitute(templateData)
+		print "RPTF:3:", fname
+	else:
+		fname=fnameTuple[0]
 
+	fullPath = path / fname
+	return fullPath

@@ -11,20 +11,20 @@ parser.add_argument("--tumorType","-t",help="Set tumor type")
 parser.add_argument("--labName","-l",help="Set lab name")
 parser.add_argument("--projectNumber","-p",help="Set project number")
 parser.add_argument("baseProject", help="Base project root directory for merge")
-parser.add_argument("mergeProject", help="other project root directory for merge")
+parser.add_argument("rightProject", help="other project root directory for merge")
 args=parser.parse_args()
 
 baseProject=args.baseProject
-mergeProject=args.mergeProject
+cdrProject=args.rightProject
 
 if not args.tumorType:
-	if getTumorType(baseProject) == getTumorType(mergeProject):
+	if getTumorType(baseProject) == getTumorType(cdrProject):
 		tumorType=getTumorType(baseProject)
 	else:
 		print >>sys.stderr
 		print >>sys.stderr, "Inconsistant tumor types"
 		print >>sys.stderr, "   base =", getTumorType(baseProject)
-		print >>sys.stderr, "   merge =", getTumorType(mergeProject)
+		print >>sys.stderr, "   merge =", getTumorType(cdrProject)
 		print >>sys.stderr
 		print >>sys.stderr, "Must set tumor type explicitly with --tumorType (-t)"
 		print >>sys.stderr
@@ -33,13 +33,13 @@ else:
 	tumorType=args.tumorType
 
 if not args.labName:
-	if getLabName(baseProject) == getLabName(mergeProject):
+	if getLabName(baseProject) == getLabName(cdrProject):
 		labName=getLabName(baseProject)
 	else:
 		print >>sys.stderr
 		print >>sys.stderr, "Inconsistant lab names"
 		print >>sys.stderr, "   base =", getLabName(baseProject)
-		print >>sys.stderr, "   merge =", getLabName(mergeProject)
+		print >>sys.stderr, "   merge =", getLabName(cdrProject)
 		print >>sys.stderr
 		print >>sys.stderr, "Must set lab name explicitly with --labName (-l)"
 		print >>sys.stderr
@@ -47,11 +47,11 @@ if not args.labName:
 else:
 	labName=args.labName
 
-if getInstitutionName(baseProject)!=getInstitutionName(mergeProject):
+if getInstitutionName(baseProject)!=getInstitutionName(cdrProject):
 		print >>sys.stderr
 		print >>sys.stderr, "Inconsistant lab names"
 		print >>sys.stderr, "   base =", getInstitutionName(baseProject)
-		print >>sys.stderr, "   merge =", getInstitutionName(mergeProject)
+		print >>sys.stderr, "   merge =", getInstitutionName(cdrProject)
 		print >>sys.stderr
 		print >>sys.stderr, "Must set lab name explicitly with --labName (-l)"
 		print >>sys.stderr
@@ -78,7 +78,7 @@ else:
 	(outPath / caseListDir).mkdir()
 
 basePath=Path(baseProject)
-mergePath=Path(mergeProject)
+mergePath=Path(cdrProject)
 
 caseFiles=["cases_all.txt","cases_cna.txt","cases_cnaseq.txt","cases_sequenced.txt"]
 for caseFile in caseFiles:
@@ -92,10 +92,20 @@ data_mutations_extended.txt
 _data_cna_hg19.seg
 """)
 
-print "files to rbind", rbindFiles
-print "base=", basePath, getStudyId(baseProject)
-print "merge=", mergePath, getStudyId(mergeProject)
 print "output=", outPath, studyId
+for fTuple in rbindFiles:
+	print "-" * 80
+	print "fileSuffix to rbind =", fTuple
+	baseFile=resolvePathToFile(
+				basePath,
+				fTuple,
+				dict(studyId=getStudyId(baseProject)))
+	mergeFile=resolvePathToFile(
+				mergePath,
+				fTuple,
+				dict(studyId=getStudyId(cdrProject)))
+	print "baseFile =", baseFile
+	print "mergeFile =", mergeFile
 
 
 #######################################################################
