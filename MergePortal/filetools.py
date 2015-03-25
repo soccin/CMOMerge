@@ -6,9 +6,20 @@ from pathlib import *
 
 from globals import *
 
+def smartOpen(pathType,mode="r"):
+	if isinstance(pathType,PosixPath):
+		fp=pathType.open(mode=mode)
+	elif isinstance(pathType,str):
+		fp=open(pathType,mode=mode)
+	elif isinstance(pathType,file):
+		fp=pathType
+	else:
+		raise ValueError("Invalid filepath type <%s>" % (type(pathType)))
+	return fp
+
 def rbind(fname1,fname2):
-	cin1=csv.DictReader(open(fname1),delimiter=CSVDELIM)
-	cin2=csv.DictReader(open(fname2),delimiter=CSVDELIM)
+	cin1=csv.DictReader(smartOpen(fname1),delimiter=CSVDELIM)
+	cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
 	if cin1.fieldnames != cin2.fieldnames:
 		print >>sys.stderr
 		print >>sys.stderr, "Colnames do not match"
@@ -24,6 +35,13 @@ def rbind(fname1,fname2):
 		data.append(dict(rec))
 
 	return (cin1.fieldnames,data)
+
+def writeTable(table,outfile):
+	fp=smartOpen(str(outfile),mode="w")
+	cout=csv.DictWriter(fp,table[0],delimiter=CSVDELIM,lineterminator="\n")
+	cout.writeheader()
+	for r in table[1]:
+		cout.writerow(r)
 
 fixGeneNames={"FAM123B":"AMER1"}
 
@@ -73,18 +91,6 @@ def mergeCNAData(fname1,fname2):
 
 	return (header,data)
 
-def writeTable(table,outfile):
-	if isinstance(outfile,str):
-		fp=open(outfile)
-	elif isinstance(outfile,file):
-		fp=outfile
-	else:
-		raise ValueError("Unknown file type %s" % (type(outfile)))
-
-	cout=csv.DictWriter(fp,table[0],delimiter=CSVDELIM)
-	cout.writeheader()
-	for r in table[1]:
-		cout.writerow(r)
 
 def getCaseList(path):
 	caseList=set()
