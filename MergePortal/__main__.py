@@ -1,6 +1,8 @@
 import sys
 from string import Template
 from pathlib import *
+import re
+import datetime
 
 from filetools import *
 from lib import *
@@ -111,7 +113,29 @@ cnaTuple=("data_CNA.txt",None)
 mergedTable=mergeCNAData(baseFile,cdrFile)
 writeTable(mergedTable,mergedFile)
 
+from templates import *
 
+today=str(datetime.date.today())
+newData=dict(
+	studyId=studyId,tumorType=tumorType,upperTumorType=tumorType.upper(),
+	projectNumber=projectNumber,lastUpdateDate=today
+	)
+
+for metaFile in metaFiles:
+	print "Merging", metaFile
+	fTuple=getFileTemplates(metaFile)[0]
+	baseFile=resolvePathToFile(basePath,fTuple,dict(studyId=getStudyId(baseProject)))
+	print baseFile
+	baseData=parseMetaData(baseFile)
+	baseData.update(newData)
+	if "name" in baseData:
+		baseData["name"]=baseData["name"].replace(getProjectNumber(baseProject),projectNumber)
+	if "description" in baseData:
+		baseData["description"]=re.sub(r"2\d\d\d-\d\d-\d\d",today,baseData["description"])
+	outFile=resolvePathToFile(outPath,fTuple,dict(studyId=studyId))
+	print outFile
+	writeMetaFile(outFile,metaFiles[metaFile].substitute(baseData))
+	print
 
 #######################################################################
 #######################################################################
@@ -120,12 +144,7 @@ writeTable(mergedTable,mergedFile)
 
 
 """
-cbind:
-	data_CNA.txt
-
-meta_CNA.txt
 meta_mutations_extended.txt
-meta_study.txt
 _meta_cna_hg19_seg.txt
 """
 
