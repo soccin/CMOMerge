@@ -141,6 +141,11 @@ def writeCaseLists(outDir, caseFile, samples, studyId):
 		print >>fp, "case_list_description:", data["case_list_description"]
 		print >>fp, "case_list_ids:", "\t".join(map(str,sorted(samples)))
 
+def writeMetaFile(outfile,outdata):
+	fp=smartOpen(str(outfile),"w")
+	print >>fp, outdata
+	fp.close()
+
 def getFileTemplates(fileLists):
 	files=[]
 	for fi in fileLists.strip().split():
