@@ -134,7 +134,7 @@ caseFileData={
 def writeCaseLists(outDir, caseFile, samples, studyId):
 	data=caseFileData[caseFile]
 	with (outDir / caseFile).open("wb") as fp:
-		print >>fp, "cancer_study_indentifier:", studyId
+		print >>fp, "cancer_study_identifier:", studyId
 		print >>fp, "stable_id:", studyId+data["stable_id"]
 		print >>fp, "case_list_category:", data["case_list_category"]
 		print >>fp, "case_list_name:", data["case_list_name"]
