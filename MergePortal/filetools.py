@@ -96,6 +96,30 @@ def mergeCNAData(fname1,fname2):
 
 	return (header,data)
 
+def mergeSuppData(fname1, fname2):
+	cin1=csv.DictReader(smartOpen(fname1),delimiter=CSVDELIM)
+	cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
+
+	commonSuppFields=set(cin1.fieldnames).intersection(cin2.fieldnames)
+
+	header=[]
+	for fi in cin1.fieldnames:
+		if fi in commonSuppFields:
+			header.append(fi)
+
+	print
+	print header
+
+	data=[]
+	for cin in (cin1,cin2):
+		for r in cin:
+			rr=dict()
+			for fi in header:
+				rr[fi]=r[fi]
+			data.append(rr)
+
+	return (header,data)
+
 def getCaseList(path):
 	caseList=set()
 	with path.open() as fp:
