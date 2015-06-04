@@ -23,24 +23,31 @@ def get3PathsForMerge(baseProject,cdrProject,studyId,outPath,fTuple):
 				dict(studyId=studyId))
 	return (baseFile,cdrFile,mergedFile)
 
-def rbind(fname1,fname2):
+def rbind(fname1,fname2,unionFields=False):
 	cin1=csv.DictReader(smartOpen(fname1),delimiter=CSVDELIM)
 	cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
-	if cin1.fieldnames != cin2.fieldnames:
+	if not unionFields and cin1.fieldnames != cin2.fieldnames:
 		print >>sys.stderr, "\n\nfiletools::rbind"
 		print >>sys.stderr, "Colnames do not match"
 		print >>sys.stderr, fname1, cin1.fieldnames
 		print >>sys.stderr, fname2, cin2.fieldnames
 		print >>sys.stderr
+		raise ValueError("Inconsistent colnames")
 		sys.exit()
+
+	fieldnames=list(cin1.fieldnames)
+	for fi in cin2.fieldnames:
+		if fi not in fieldnames:
+			fieldnames.append(fi)
 
 	data=[]
 	for rec in cin1:
 		data.append(dict(rec))
 	for rec in cin2:
 		data.append(dict(rec))
-
 	return (cin1.fieldnames,data)
+
+
 
 def writeTable(table,outfile):
 	fp=smartOpen(str(outfile),mode="w")
@@ -207,7 +214,7 @@ def writeCaseLists(outDir, caseFile, samples, studyId):
 
 def writeMetaFile(outfile,outdata):
 	fp=smartOpen(str(outfile),"w")
-	print >>fp, outdata
+	print >>fp, outdata.encode('utf-8')
 	fp.close()
 
 def getFileTemplates(fileLists):
