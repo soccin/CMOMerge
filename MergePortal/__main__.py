@@ -74,9 +74,19 @@ print "Merged study id =", studyId
 if args.mergeBatches:
 	mergeBatches=args.mergeBatches
 else:
-	print baseProject
-	print cdrProject
-	raise NotImplementedError("Need to implement auto batch merge string creation")
+	baseProjectNum=getProjectNumber(baseProject)
+	baseProjectTag=baseProjectNum.split("_")[0]
+	cdrProjectNum=getProjectNumber(cdrProject)
+	cdrProjectTag=cdrProjectNum.split("_")[0]
+	if baseProjectTag != cdrProjectTag:
+		mergeBatches=",".join([baseProjectNum,cdrProjectNum])
+	else:
+		baseProjectBatch="_".join(baseProjectNum.split("_")[1:]).upper()
+		baseProjectBatch="A" if not baseProjectBatch else baseProjectBatch
+		cdrProjectBatch="_".join(cdrProjectNum.split("_")[1:]).upper()
+		cdrProjectBatch="A" if not cdrProjectBatch else cdrProjectBatch
+		mergeBatches=",".join(sorted([baseProjectBatch,cdrProjectBatch]))
+
 print "mergeBatches =", mergeBatches
 
 outPath=Path("/".join(["_merge",tumorType,institutionName,labName,projectNumber]))
@@ -114,11 +124,14 @@ for fTuple in rbindFiles:
 	if fTuple[0]=="data_clinical.txt":
 		if args.cdrClinicalFile:
 			cdrFile=args.cdrClinicalFile
+		unionFieldNames=True
+	else:
+		unionFieldNames=False
 	print "baseFile =", baseFile
 	print "cdrFile =", cdrFile
 	print "mergedFile =", mergedFile
 	print
-	mergedTable=rbind(baseFile,cdrFile)
+	mergedTable=rbind(baseFile,cdrFile,unionFieldNames)
 	writeTable(mergedTable,mergedFile)
 
 cnaTuple=("data_CNA.txt",None)
