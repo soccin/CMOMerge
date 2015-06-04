@@ -12,12 +12,21 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--tumorType","-t",help="Set tumor type")
 parser.add_argument("--labName","-l",help="Set lab name")
 parser.add_argument("--projectNumber","-p",help="Set project number")
+parser.add_argument("--institutionName","-i",help="Set institution Name (mskcc)")
+parser.add_argument("--mergeBatches","-m",help="Batches in merge")
+parser.add_argument("--cdrClinicalFile","-c",help="Updated CDR clinical file")
+parser.add_argument("--cnaGeneList",help="Set explicit gene list of CNA merge")
 parser.add_argument("baseProject", help="Base project root directory for merge")
 parser.add_argument("rightProject", help="other project root directory for merge")
 args=parser.parse_args()
 
 baseProject=args.baseProject
 cdrProject=args.rightProject
+
+if not args.cnaGeneList:
+	geneList=None
+else:
+	geneList=args.cnaGeneList
 
 if not args.tumorType:
 	if getTumorType(baseProject) == getTumorType(cdrProject):
@@ -49,17 +58,11 @@ if not args.labName:
 else:
 	labName=args.labName
 
-if getInstitutionName(baseProject)!=getInstitutionName(cdrProject):
-		print >>sys.stderr
-		print >>sys.stderr, "Inconsistant lab names"
-		print >>sys.stderr, "   base =", getInstitutionName(baseProject)
-		print >>sys.stderr, "   merge =", getInstitutionName(cdrProject)
-		print >>sys.stderr
-		print >>sys.stderr, "Must set lab name explicitly with --labName (-l)"
-		print >>sys.stderr
-		sys.exit()
+if not args.institutionName:
+	institutionName="cbe"
+else:
+	institutionName=args.institutionName
 
-institutionName=getInstitutionName(baseProject)
 if args.projectNumber:
 	projectNumber=args.projectNumber
 else:
@@ -67,6 +70,14 @@ else:
 
 studyId="_".join([tumorType,institutionName,labName,projectNumber])
 print "Merged study id =", studyId
+
+if args.mergeBatches:
+	mergeBatches=args.mergeBatches
+else:
+	print baseProject
+	print cdrProject
+	raise NotImplementedError("Need to implement auto batch merge string creation")
+print "mergeBatches =", mergeBatches
 
 outPath=Path("/".join(["_merge",tumorType,institutionName,labName,projectNumber]))
 caseListDir=Path("case_lists")
@@ -100,6 +111,9 @@ for fTuple in rbindFiles:
 	print "fileSuffix to rbind =", fTuple
 	(baseFile,cdrFile,mergedFile)=get3PathsForMerge(baseProject,cdrProject,
 													studyId,outPath,fTuple)
+	if fTuple[0]=="data_clinical.txt":
+		if args.cdrClinicalFile:
+			cdrFile=args.cdrClinicalFile
 	print "baseFile =", baseFile
 	print "cdrFile =", cdrFile
 	print "mergedFile =", mergedFile
@@ -110,7 +124,7 @@ for fTuple in rbindFiles:
 cnaTuple=("data_CNA.txt",None)
 (baseFile,cdrFile,mergedFile)=get3PathsForMerge(baseProject,cdrProject,
 												studyId,outPath,cnaTuple)
-mergedTable=mergeCNAData(baseFile,cdrFile)
+mergedTable=mergeCNAData(baseFile,cdrFile,geneList)
 writeTable(mergedTable,mergedFile)
 
 from templates import *
@@ -132,7 +146,29 @@ for metaFile in metaFiles:
 		baseData["name"]=baseData["name"].replace(getProjectNumber(baseProject),projectNumber)
 	if "description" in baseData:
 		baseData["description"]=re.sub(r"2\d\d\d-\d\d-\d\d",today,baseData["description"])
+		pos=baseData["description"].find(" (BATCHES:")
+		if pos>-1:
+			baseData["description"]=baseData["description"][:pos]+" (BATCHES: %s)" % mergeBatches
+		else:
+			baseData["description"]+=" (BATCHES: %s)" % mergeBatches
 	outFile=resolvePathToFile(outPath,fTuple,dict(studyId=studyId))
 	print outFile
 	writeMetaFile(outFile,metaFiles[metaFile].substitute(baseData))
 	print
+
+clinSuppTuple=("data_clinical_supp.txt",None)
+(baseFile,cdrFile,mergedFile)=get3PathsForMerge(baseProject,cdrProject,
+												studyId,outPath,clinSuppTuple)
+
+
+#
+# Only do supp clinical merge if the base file
+# exists, mergeSuppData knows now how to deal with
+# missing file on cdr side
+#
+if baseFile.exists():
+	mergedTable=mergeSuppData(baseFile,cdrFile)
+	if mergedTable:
+		writeTable(mergedTable,mergedFile)
+
+

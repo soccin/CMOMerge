@@ -4,6 +4,7 @@ from itertools import izip_longest
 from string import Template
 from pathlib import *
 from lib import *
+import os.path
 
 from globals import *
 
@@ -26,7 +27,7 @@ def rbind(fname1,fname2):
 	cin1=csv.DictReader(smartOpen(fname1),delimiter=CSVDELIM)
 	cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
 	if cin1.fieldnames != cin2.fieldnames:
-		print >>sys.stderr
+		print >>sys.stderr, "\n\nfiletools::rbind"
 		print >>sys.stderr, "Colnames do not match"
 		print >>sys.stderr, fname1, cin1.fieldnames
 		print >>sys.stderr, fname2, cin2.fieldnames
@@ -46,7 +47,12 @@ def writeTable(table,outfile):
 	cout=csv.DictWriter(fp,table[0],delimiter=CSVDELIM,lineterminator="\n")
 	cout.writeheader()
 	for r in table[1]:
-		cout.writerow(r)
+		try:
+			cout.writerow(r)
+		except TypeError:
+			print r
+			raise
+			sys.exit()
 
 fixGeneNames={"FAM123B":"AMER1"}
 
@@ -61,7 +67,12 @@ def getCNADataTable(cin):
 		table[gene]=rr
 	return table
 
-def mergeCNAData(fname1,fname2):
+def mergeCNAData(fname1,fname2,geneList=None):
+
+	print
+	print "geneList =",geneList
+	print
+
 	cin1=csv.DictReader(smartOpen(fname1),delimiter=CSVDELIM)
 	cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
 
@@ -78,16 +89,26 @@ def mergeCNAData(fname1,fname2):
 	tbl1=getCNADataTable(cin1)
 	tbl2=getCNADataTable(cin2)
 
-	if set(tbl1.keys())!=set(tbl2.keys()):
+	if geneList:
+		genes=set()
+		SDIR=os.path.dirname(os.path.realpath(__file__))
+		with open(os.path.join(SDIR, geneList+".genes")) as fp:
+			for line in fp:
+				for gi in line.strip().split():
+					genes.add(gi)
+		genes=sorted(genes)
+	elif set(tbl1.keys())!=set(tbl2.keys()):
 		print >>sys.stderr
 		print >>sys.stderr, "Inconsistent gene sets"
-		print >>sys.stderr, fname1, set(tbl1.keys)
-		print >>sys.stderr, fname2, set(tbl2.keys)
+		print >>sys.stderr
+		print >>sys.stderr, fname1
+		print >>sys.stderr, fname2
 		print >>sys.stderr
 		sys.exit()
+	else:
+		genes=sorted(tbl1.keys())
 
 	data=[]
-	genes=sorted(tbl1.keys())
 	for gi in genes:
 		rr=dict(tbl1[gi])
 		rr.update(tbl2[gi])
@@ -98,27 +119,46 @@ def mergeCNAData(fname1,fname2):
 
 def mergeSuppData(fname1, fname2):
 	cin1=csv.DictReader(smartOpen(fname1),delimiter=CSVDELIM)
-	cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
+	if fname2.exists():
+		cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
 
-	commonSuppFields=set(cin1.fieldnames).intersection(cin2.fieldnames)
+		commonSuppFields=set(cin1.fieldnames).intersection(cin2.fieldnames)
 
-	header=[]
-	for fi in cin1.fieldnames:
-		if fi in commonSuppFields:
-			header.append(fi)
+		header=[]
+		for fi in cin1.fieldnames:
+			if fi in commonSuppFields:
+				header.append(fi)
 
-	print
-	print header
+		print
+		print header
 
-	data=[]
-	for cin in (cin1,cin2):
-		for r in cin:
+		data=[]
+		for cin in (cin1,cin2):
+			for r in cin:
+				rr=dict()
+				for fi in header:
+					rr[fi]=r[fi]
+				data.append(rr)
+
+	else:
+		print "Missing supplemental clinical file for CDR"
+
+		header=cin1.fieldnames
+		data=[]
+		for r in cin1:
+			data.append(r)
+		clinicalFile=str(fname2).replace("_supp","")
+		cin2=csv.DictReader(smartOpen(clinicalFile),delimiter=CSVDELIM)
+		for r in cin2:
 			rr=dict()
 			for fi in header:
-				rr[fi]=r[fi]
+				rr[fi]="na"
+			rr["SAMPLE_ID"]=r["SAMPLE_ID"]
+			rr["PATIENT_ID"]=r["PATIENT_ID"]
 			data.append(rr)
 
 	return (header,data)
+
 
 def getCaseList(path):
 	caseList=set()
