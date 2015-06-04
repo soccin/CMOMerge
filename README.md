@@ -3,7 +3,8 @@ Merge two CMO projects from their portal repository folders
 
 Usage::
 
-> CMOMerge/App.sh
+```
+CMOMerge/App.sh
 usage: MergePortal [-h] [--tumorType TUMORTYPE] [--labName LABNAME]
                    [--projectNumber PROJECTNUMBER]
                    [--institutionName INSTITUTIONNAME]
@@ -11,6 +12,7 @@ usage: MergePortal [-h] [--tumorType TUMORTYPE] [--labName LABNAME]
                    [--cdrClinicalFile CDRCLINICALFILE]
                    [--cnaGeneList CNAGENELIST]
                    baseProject rightProject
+```
 
 For projects with no merging issues you should simply be able to do
 
