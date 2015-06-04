@@ -24,10 +24,12 @@ def parseMetaData(fname):
     data=dict()
     for line in fp:
         line=line.strip()
-        pos=line.find(": ")
+        pos=line.find(":")
         if pos>-1:
             data[line[:(pos)]]=line[(pos+2):]
         else:
+            print >>sys.stderr, fname
+            print >>sys.stderr, "[",line,"]"
             raise ValueError("Invalid meta data line %s" % (line))
 
     return data
