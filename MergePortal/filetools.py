@@ -5,48 +5,52 @@ from string import Template
 from pathlib import *
 from lib import *
 import os.path
+from collections import defaultdict
 
 from globals import *
 
-def get3PathsForMerge(baseProject,cdrProject,studyId,outPath,fTuple):
-	baseFile=resolvePathToFile(
-				Path(baseProject),
-				fTuple,
-				dict(studyId=getStudyId(baseProject)))
-	cdrFile=resolvePathToFile(
-				Path(cdrProject),
-				fTuple,
-				dict(studyId=getStudyId(cdrProject)))
+def get3PathsForMerge(projectList,studyId,outPath,fTuple,updatedFile=None):
+	mergeList = []
+	for project in projectList:
+		if updatedFile and project in updatedFile:
+			filename=updatedFile[project]
+			print "RPTF:0:", filename
+		else:
+			filename=resolvePathToFile(
+						Path(project),
+						fTuple,
+						dict(studyId=getStudyId(project)))
+		mergeList.append(filename)
+
 	mergedFile=resolvePathToFile(
 				outPath,
 				fTuple,
 				dict(studyId=studyId))
-	return (baseFile,cdrFile,mergedFile)
+	return (mergeList,mergedFile)
 
-def rbind(fname1,fname2,unionFields=False):
-	cin1=csv.DictReader(smartOpen(fname1),delimiter=CSVDELIM)
-	cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
-	if not unionFields and cin1.fieldnames != cin2.fieldnames:
-		print >>sys.stderr, "\n\nfiletools::rbind"
-		print >>sys.stderr, "Colnames do not match"
-		print >>sys.stderr, fname1, cin1.fieldnames
-		print >>sys.stderr, fname2, cin2.fieldnames
-		print >>sys.stderr
-		raise ValueError("Inconsistent colnames")
-		sys.exit()
-
-	fieldnames=list(cin1.fieldnames)
-	for fi in cin2.fieldnames:
-		if fi not in fieldnames:
-			fieldnames.append(fi)
-
+def rbind(fnameList, unionFields=False):
+	fieldnames=[]
 	data=[]
-	for rec in cin1:
-		data.append(dict(rec))
-	for rec in cin2:
-		data.append(dict(rec))
-	return (cin1.fieldnames,data)
-
+	for fname in fnameList:
+		cin=csv.DictReader(smartOpen(fname),delimiter=CSVDELIM)
+		if not fieldnames:
+			fieldnames=list(cin.fieldnames)
+		elif fieldnames != cin.fieldnames:
+			if unionFields:
+				for fi in cin.fieldnames:
+					if fi not in fieldnames:
+						fieldnames.append(fi)
+			else:
+				print >>sys.stderr, "\n\nfiletools::rbind"
+				print >>sys.stderr, "Colnames do not match"
+				print >>sys.stderr, fieldnames
+				print >>sys.stderr, fname, cin.fieldnames
+				print >>sys.stderr
+				raise ValueError("Inconsistent colnames")
+				sys.exit()
+		for rec in cin:
+			data.append(dict(rec))
+	return (fieldnames,data)
 
 
 def writeTable(table,outfile):
@@ -74,97 +78,96 @@ def getCNADataTable(cin):
 		table[gene]=rr
 	return table
 
-def mergeCNAData(fname1,fname2,geneList=None):
+def mergeCNAData(fnameList,geneList=None):
 
 	print
 	print "geneList =",geneList
 	print
-
-	cin1=csv.DictReader(smartOpen(fname1),delimiter=CSVDELIM)
-	cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
-
-	if cin1.fieldnames[0]!=cin2.fieldnames[0] or cin1.fieldnames[0] != "Hugo_Symbol" :
-		print >>sys.stderr
-		print >>sys.stderr, "Col1 do not match or not Gene Symbols"
-		print >>sys.stderr, fname1, cin1.fieldnames[0]
-		print >>sys.stderr, fname2, cin2.fieldnames[0]
-		print >>sys.stderr
-		sys.exit()
-
-	header=cin1.fieldnames+cin2.fieldnames[1:]
-
-	tbl1=getCNADataTable(cin1)
-	tbl2=getCNADataTable(cin2)
-
+	genes=set()
 	if geneList:
-		genes=set()
 		SDIR=os.path.dirname(os.path.realpath(__file__))
 		with open(os.path.join(SDIR, geneList+".genes")) as fp:
 			for line in fp:
 				for gi in line.strip().split():
 					genes.add(gi)
 		genes=sorted(genes)
-	elif set(tbl1.keys())!=set(tbl2.keys()):
-		print >>sys.stderr
-		print >>sys.stderr, "Inconsistent gene sets"
-		print >>sys.stderr
-		print >>sys.stderr, fname1
-		print >>sys.stderr, fname2
-		print >>sys.stderr
-		sys.exit()
-	else:
-		genes=sorted(tbl1.keys())
+
+	header=[]
+	mergedTable=defaultdict(dict)
+	for fname in fnameList:
+		cin=csv.DictReader(smartOpen(fname),delimiter=CSVDELIM)
+		if cin.fieldnames[0] != "Hugo_Symbol" :
+			print >>sys.stderr
+			print >>sys.stderr, "Col1 is not Gene Symbols"
+			print >>sys.stderr, fname, cin.fieldnames[0]
+			print >>sys.stderr
+			sys.exit()
+		if not header:
+			header = list(cin.fieldnames);
+		else:
+			header += cin.fieldnames[1:]
+		tbl=getCNADataTable(cin)
+		if not genes:
+			genes=sorted(tbl.keys())
+		elif not geneList and set(genes)!=set(tbl.keys()):
+			print >>sys.stderr
+			print >>sys.stderr, "Inconsistent gene sets"
+			print >>sys.stderr
+			print >>sys.stderr, fname
+			print >>sys.stderr
+			sys.exit()
+		for gi in genes:
+			mergedTable[gi].update(tbl[gi])
 
 	data=[]
 	for gi in genes:
-		rr=dict(tbl1[gi])
-		rr.update(tbl2[gi])
+		rr=dict(mergedTable[gi])
 		rr['Hugo_Symbol']=gi
+		data.append(rr)
+	return (header,data)
+
+def mergeSuppData(fnameList):
+	commonSuppFields=set();
+	baseSuppFields=[]
+	dataRaw=[]
+	for fname in fnameList:
+		if fname.exists():
+			cin=csv.DictReader(smartOpen(fname),delimiter=CSVDELIM)
+			if not baseSuppFields:
+				baseSuppFields=cin.fieldnames
+			if not commonSuppFields:
+				commonSuppFields=set(cin.fieldnames)
+			else:
+				commonSuppFields &= cin.fieldnames
+			for r in cin:
+				dataRaw.append(r)
+		else:
+			print "Missing supplemental clinical file: ", fname
+			clinicalFile=str(fname).replace("_supp","")
+			cin=csv.DictReader(smartOpen(clinicalFile),delimiter=CSVDELIM)
+			for r in cin:
+				rr=dict()
+				rr["SAMPLE_ID"]=r["SAMPLE_ID"]
+				rr["PATIENT_ID"]=r["PATIENT_ID"]
+				dataRaw.append(rr)
+
+	header=[]
+	for fi in baseSuppFields:
+		if fi in commonSuppFields:
+			header.append(fi)
+
+	data=[]
+	for dataRec in dataRaw:
+		rr=dict()
+		for fi in header:
+			if fi in dataRec:
+				rr[fi]=dataRec[fi]
+			else:
+				rr[fi]="na"
 		data.append(rr)
 
 	return (header,data)
 
-def mergeSuppData(fname1, fname2):
-	cin1=csv.DictReader(smartOpen(fname1),delimiter=CSVDELIM)
-	if fname2.exists():
-		cin2=csv.DictReader(smartOpen(fname2),delimiter=CSVDELIM)
-
-		commonSuppFields=set(cin1.fieldnames).intersection(cin2.fieldnames)
-
-		header=[]
-		for fi in cin1.fieldnames:
-			if fi in commonSuppFields:
-				header.append(fi)
-
-		print
-		print header
-
-		data=[]
-		for cin in (cin1,cin2):
-			for r in cin:
-				rr=dict()
-				for fi in header:
-					rr[fi]=r[fi]
-				data.append(rr)
-
-	else:
-		print "Missing supplemental clinical file for CDR"
-
-		header=cin1.fieldnames
-		data=[]
-		for r in cin1:
-			data.append(r)
-		clinicalFile=str(fname2).replace("_supp","")
-		cin2=csv.DictReader(smartOpen(clinicalFile),delimiter=CSVDELIM)
-		for r in cin2:
-			rr=dict()
-			for fi in header:
-				rr[fi]="na"
-			rr["SAMPLE_ID"]=r["SAMPLE_ID"]
-			rr["PATIENT_ID"]=r["PATIENT_ID"]
-			data.append(rr)
-
-	return (header,data)
 
 
 def getCaseList(path):
