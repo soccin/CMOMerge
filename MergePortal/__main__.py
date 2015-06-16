@@ -19,8 +19,13 @@ parser.add_argument("--cnaGeneList",help="Set explicit gene list of CNA merge")
 parser.add_argument("--project", action='append', help="project root directory for merge, and optional updated clinical file, seperated by :")
 args=parser.parse_args()
 
+if not args.project:
+	parser.print_help()
+	sys.exit()
+
 projectList=[]
 updatedClinicalFile=dict()
+
 for pi in args.project:
 	piParse = pi.split(":")
 	if len(piParse) == 1:
@@ -155,7 +160,7 @@ for fTuple in rbindFiles:
 		unionFieldNames=False
 		(mergeList,mergedFile)=get3PathsForMerge(projectList,studyId,outPath,fTuple)
 
-	for mf in mergeList: 
+	for mf in mergeList:
 		print "inputFile =", mf
 	print "mergedFile =", mergedFile
 	print
