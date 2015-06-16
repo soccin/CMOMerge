@@ -1,5 +1,5 @@
 # CMOMerge
-Merge two CMO projects from their portal repository folders
+Merge multiple CMO projects from their portal repository folders
 
 Usage::
 
