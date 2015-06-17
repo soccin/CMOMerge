@@ -18,7 +18,7 @@ For projects with no merging issues you should simply be able to do
 ```bash
 ./CMOMerge/App.sh \
     --project /path/to/portal/repo/batch1 \
-    --project/path/to/portal/repo/batch2
+    --project /path/to/portal/repo/batch2
 ```
 
 and this will create a merged project in the _merge subfolder. E.g.:

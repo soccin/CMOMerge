@@ -134,11 +134,11 @@ def mergeSuppData(fnameList):
 		if fname.exists():
 			cin=csv.DictReader(smartOpen(fname),delimiter=CSVDELIM)
 			if not baseSuppFields:
-				baseSuppFields=cin.fieldnames
+				baseSuppFields=list(cin.fieldnames)
 			if not commonSuppFields:
 				commonSuppFields=set(cin.fieldnames)
 			else:
-				commonSuppFields &= cin.fieldnames
+				commonSuppFields &= set(cin.fieldnames)
 			for r in cin:
 				dataRaw.append(r)
 		else:
