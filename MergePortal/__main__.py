@@ -153,7 +153,7 @@ rbindFiles=getFileTemplates("""
 for fTuple in rbindFiles:
 	print "-" * 80
 	print "fileSuffix to rbind =", fTuple
-	if fTuple[0]=="data_clinical.txt":
+	if fTuple[0]=="data_clinical.txt" or fTuple[0]=="data_mutations_extended.txt":
 		unionFieldNames=True
 		(mergeList,mergedFile)=get3PathsForMerge(projectList,studyId,outPath,fTuple,updatedClinicalFile)
 	else:
