@@ -9,6 +9,7 @@ from lib import *
 from templates import *
 
 import argparse
+import shutil
 parser = argparse.ArgumentParser()
 parser.add_argument("--tumorType","-t",help="Set tumor type")
 parser.add_argument("--labName","-l",help="Set lab name")
@@ -153,12 +154,15 @@ rbindFiles=getFileTemplates("""
 for fTuple in rbindFiles:
 	print "-" * 80
 	print "fileSuffix to rbind =", fTuple
-	if fTuple[0]=="data_clinical.txt" or fTuple[0]=="data_mutations_extended.txt":
+	if fTuple[0]=="data_clinical.txt":
 		unionFieldNames=True
-		(mergeList,mergedFile)=get3PathsForMerge(projectList,studyId,outPath,fTuple,updatedClinicalFile)
+		(mergeList,mergedFile)=getPathsForMerge(projectList,studyId,outPath,fTuple,updatedClinicalFile)
+	elif fTuple[0]=="data_mutations_extended.txt":
+		unionFieldNames=True
+		(mergeList,mergedFile)=getPathsForMerge(projectList,studyId,outPath,fTuple)
 	else:
 		unionFieldNames=False
-		(mergeList,mergedFile)=get3PathsForMerge(projectList,studyId,outPath,fTuple)
+		(mergeList,mergedFile)=getPathsForMerge(projectList,studyId,outPath,fTuple)
 
 	for mf in mergeList:
 		print "inputFile =", mf
@@ -169,7 +173,7 @@ for fTuple in rbindFiles:
 
 
 cnaTuple=("data_CNA.txt",None)
-(mergeList,mergedFile)=get3PathsForMerge(projectList,studyId,outPath,cnaTuple)
+(mergeList,mergedFile)=getPathsForMerge(projectList,studyId,outPath,cnaTuple)
 mergedTable=mergeCNAData(mergeList,geneList)
 writeTable(mergedTable,mergedFile)
 
@@ -205,7 +209,7 @@ for metaFile in metaFiles:
 
 
 clinSuppTuple=("data_clinical_supp.txt",None)
-(mergeList,mergedFile)=get3PathsForMerge(projectList,studyId,outPath,clinSuppTuple)
+(mergeList,mergedFile)=getPathsForMerge(projectList,studyId,outPath,clinSuppTuple)
 #
 # Only do supp clinical merge if the base file
 # exists, mergeSuppData knows now how to deal with
@@ -216,4 +220,58 @@ if baseFile.exists():
 	mergedTable=mergeSuppData(mergeList)
 	if mergedTable:
 		writeTable(mergedTable,mergedFile)
+print
+
+
+
+
+clinSuppExtraPattern="data_clinical_supp_*.txt"
+mergeList=getPathsForMergeRegEx(projectList, clinSuppExtraPattern)
+for clinSuppFile in mergeList:
+	print "Copying", clinSuppFile
+	outputFile=os.path.join(str(outPath), os.path.basename(clinSuppFile))
+	if os.path.isfile(outputFile):
+		print >>sys.stderr, "\nFile ", outputFile, "already exists"
+		print >>sys.stderr, "There might be a file name conflict in multiple projects\n"
+		sys.exit()
+	shutil.copyfile(clinSuppFile, outputFile)
+print
+
+
+timelinePattern="data_timeline_*.txt"
+mergeList=getPathsForMergeRegEx(projectList, timelinePattern)
+for timelineFile in mergeList:
+	print "Copying", timelineFile
+	outputFile=os.path.join(str(outPath), os.path.basename(timelineFile))
+	if os.path.isfile(outputFile):
+		print >>sys.stderr, "\nFile ", outputFile, "already exists"
+		print >>sys.stderr, "There might be a file name conflict in multiple projects\n"
+		sys.exit()
+	shutil.copyfile(timelineFile, outputFile)
+if(len(mergeList)>0):
+	metaFile="meta_timeline.txt"
+	outputFile=os.path.join(str(outPath), metaFile)
+	print "Creating", outputFile
+	writeMetaFile(outputFile, metaFilesOptional[metaFile].substitute(newData))
+print
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

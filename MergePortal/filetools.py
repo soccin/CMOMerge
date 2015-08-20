@@ -4,12 +4,13 @@ from itertools import izip_longest
 from string import Template
 from pathlib import *
 from lib import *
-import os.path
+import os
 from collections import defaultdict
+import fnmatch
 
 from globals import *
 
-def get3PathsForMerge(projectList,studyId,outPath,fTuple,updatedFile=None):
+def getPathsForMerge(projectList,studyId,outPath,fTuple,updatedFile=None):
 	mergeList = []
 	for project in projectList:
 		if updatedFile and project in updatedFile:
@@ -27,6 +28,19 @@ def get3PathsForMerge(projectList,studyId,outPath,fTuple,updatedFile=None):
 				fTuple,
 				dict(studyId=studyId))
 	return (mergeList,mergedFile)
+
+
+def getPathsForMergeRegEx(projectList, pattern, recursive=False):
+	mergeList = []
+	for project in projectList:
+		projectPath = str(Path(project))
+		for root, dirnames, filenames in os.walk(projectPath):
+			for filename in fnmatch.filter(filenames, pattern):
+				mergeList.append(os.path.join(root, filename))
+			if(not recursive):
+				break # only search for the top level of the directory
+	return mergeList
+
 
 def rbind(fnameList, unionFields=False):
 	fieldnames=[]
