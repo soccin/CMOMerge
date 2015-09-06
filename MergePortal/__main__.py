@@ -3,10 +3,25 @@ from string import Template
 from pathlib import *
 import re
 import datetime
+import subprocess
+import os.path
 
 from filetools import *
 from lib import *
 from templates import *
+
+
+PDIR=os.path.dirname(os.path.realpath(__file__))
+SDIR=os.path.split(PDIR)[0]
+
+#--git-dir=$REPO/.git --work-tree=$REPO
+GIT_VERSION=subprocess.check_output(
+	["git",
+	 "--git-dir=%s/.git" % SDIR,
+	 "--work-tree=%s" % SDIR,
+	"describe","--always"
+	]).strip()
+print "Version (%s)" % GIT_VERSION
 
 import argparse
 import shutil
@@ -208,7 +223,7 @@ for metaFile in metaFiles:
 		if pos>-1:
 			baseData["description"]=baseData["description"][:pos]+" (BATCHES: %s)" % mergeBatches
 		else:
-			baseData["description"]+=" (BATCHES: %s)" % mergeBatches
+			baseData["description"]+=" (ver %s; BATCHES: %s)" % (GIT_VERSION, mergeBatches)
 	outFile=resolvePathToFile(outPath,fTuple,dict(studyId=studyId))
 	print outFile
 	writeMetaFile(outFile,metaFiles[metaFile].substitute(baseData))
