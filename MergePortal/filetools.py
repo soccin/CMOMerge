@@ -97,17 +97,10 @@ def mergeCNAData(fnameList,geneList=None):
 	print
 	print "geneList =",geneList
 	print
-	genes=set()
-	if geneList:
-		SDIR=os.path.dirname(os.path.realpath(__file__))
-		with open(os.path.join(SDIR, geneList+".genes")) as fp:
-			for line in fp:
-				for gi in line.strip().split():
-					genes.add(gi)
-		genes=sorted(genes)
 
+	# First read in all tables
+	cnaTables=[]
 	header=[]
-	mergedTable=defaultdict(dict)
 	for fname in fnameList:
 		cin=csv.DictReader(smartOpen(fname),delimiter=CSVDELIM)
 		if cin.fieldnames[0] != "Hugo_Symbol" :
@@ -120,18 +113,27 @@ def mergeCNAData(fnameList,geneList=None):
 			header = list(cin.fieldnames);
 		else:
 			header += cin.fieldnames[1:]
-		tbl=getCNADataTable(cin)
-		if not genes:
-			genes=sorted(tbl.keys())
-		elif not geneList and set(genes)!=set(tbl.keys()):
-			print >>sys.stderr
-			print >>sys.stderr, "Inconsistent gene sets"
-			print >>sys.stderr
-			print >>sys.stderr, fname
-			print >>sys.stderr
-			sys.exit()
+		cnaTables.append(getCNADataTable(cin))
+
+	genes=set()
+	if geneList:
+		SDIR=os.path.dirname(os.path.realpath(__file__))
+		with open(os.path.join(SDIR, geneList+".genes")) as fp:
+			for line in fp:
+				for gi in line.strip().split():
+					genes.add(gi)
+	else:
+		# Get union of all genes from all batches
+		for tbl in cnaTables:
+			genes.update(tbl.keys())
+	genes=sorted(genes)
+
+	mergedTable=defaultdict(dict)
+	for tbl in cnaTables:
+		samples=tbl[tbl.keys()[0]].keys()
+		nullRow=dict([(x,"NA") for x in samples])
 		for gi in genes:
-			mergedTable[gi].update(tbl[gi])
+			mergedTable[gi].update(tbl.get(gi,nullRow))
 
 	data=[]
 	for gi in genes:
