@@ -92,7 +92,14 @@ else:
 if args.projectNumber:
 	projectNumber=args.projectNumber
 else:
-	projectNumber=getProjectNumber(baseProject)
+	print >>sys.stderr
+	print >>sys.stderr, "Merge project number must be specified with -p option"
+	print >>sys.stderr
+	for project in projectList:
+		print >>sys.stderr, "   ",project, " = ", getProjectNumber(project)
+	print >>sys.stderr
+	print >>sys.stderr
+	sys.exit()
 
 studyId="_".join([tumorType,institutionName,labName,projectNumber])
 print "-" * 80
