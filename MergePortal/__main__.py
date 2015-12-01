@@ -142,6 +142,8 @@ else:
 		mergeBatches=",".join(sorted(projectBatchSet))
 
 print "mergeBatches =", mergeBatches
+print "projectList =", projectList
+print "projectTag =", projectTag
 
 outPath=Path("/".join(["_merge",tumorType,institutionName,labName,projectNumber]))
 caseListDir=Path("case_lists")
@@ -199,13 +201,11 @@ cnaTuple=("data_CNA.txt",None)
 mergedTable=mergeCNAData(mergeList,geneList)
 writeTable(mergedTable,mergedFile)
 
-
-
-
 today=str(datetime.date.today())
 newData=dict(
 	studyId=studyId,tumorType=tumorType,upperTumorType=tumorType.upper(),
-	projectNumber=projectNumber,lastUpdateDate=today
+	projectNumber="%s [%s]" % (projectNumber,projectTag),
+	lastUpdateDate=today
 	)
 
 for metaFile in metaFiles:
@@ -216,7 +216,7 @@ for metaFile in metaFiles:
 	baseData=parseMetaData(baseFile)
 	baseData.update(newData)
 	if "name" in baseData:
-		baseData["name"]=baseData["name"].replace(getProjectNumber(baseProject),projectNumber)
+		baseData["name"]=baseData["name"].replace(getProjectNumber(baseProject),newData["projectNumber"])
 	if "description" in baseData:
 		baseData["description"]=re.sub(r"2\d\d\d-\d\d-\d\d",today,baseData["description"])
 		pos=baseData["description"].find(" (BATCHES:")
