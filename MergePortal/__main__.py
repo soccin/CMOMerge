@@ -145,7 +145,9 @@ print "mergeBatches =", mergeBatches
 print "projectList =", projectList
 print "projectTag =", projectTag
 
-outPath=Path("/".join(["_merge",tumorType,institutionName,labName,projectNumber]))
+#REPO_ROOT="_merge"
+REPO_ROOT="bic-mskcc"
+outPath=Path("/".join([REPO_ROOT,tumorType,institutionName,labName,projectNumber]))
 caseListDir=Path("case_lists")
 
 
