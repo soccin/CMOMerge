@@ -33,6 +33,7 @@ parser.add_argument("--institutionName","-i",help="Set institution Name (mskcc)"
 parser.add_argument("--mergeBatches","-m",help="Batches in merge")
 parser.add_argument("--cnaGeneList",help="Set explicit gene list of CNA merge")
 parser.add_argument("--project", action='append', help="project root directory for merge, and optional updated clinical file, seperated by :")
+parser.add_argument("--force","-f", action="store_true", default=False, help="Force overwrite")
 args=parser.parse_args()
 
 if not args.project:
@@ -152,12 +153,17 @@ caseListDir=Path("case_lists")
 
 
 if outPath.exists():
-	print >>sys.stderr, "\nOutput folder", outPath, "exists"
-	print >>sys.stderr, "Will not overwrite\n"
-	sys.exit()
-else:
-	outPath.mkdir(parents=True)
-	(outPath / caseListDir).mkdir()
+	if not args.force:
+		print >>sys.stderr, "\nOutput folder", outPath, "exists"
+		print >>sys.stderr, "Will not overwrite\n"
+		sys.exit()
+	else:
+		print >>sys.stderr, "\n Overwriting", outPath
+		import shutil
+		shutil.rmtree(str(outPath))
+
+outPath.mkdir(parents=True)
+(outPath / caseListDir).mkdir()
 
 basePath=Path(baseProject)
 
