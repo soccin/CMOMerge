@@ -28,7 +28,7 @@ import shutil
 parser = argparse.ArgumentParser()
 parser.add_argument("--tumorType","-t",help="Set tumor type")
 parser.add_argument("--labName","-l",help="Set lab name")
-parser.add_argument("--projectNumber","-p",help="Set project number")
+parser.add_argument("--projectNumber","-n",help="Set project number")
 parser.add_argument("--institutionName","-i",help="Set institution Name (mskcc)")
 parser.add_argument("--mergeBatches","-m",help="Batches in merge")
 parser.add_argument("--cnaGeneList",help="Set explicit gene list of CNA merge")
