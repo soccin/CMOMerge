@@ -1,4 +1,92 @@
 #!/bin/bash
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
+PYTHON=/opt/common/CentOS_6/python/python-2.7.8/bin/python2.7
+REPO=/ifs/res/socci/Work/CMO/CMOMerge/bic-mskcc
 
-/opt/common/CentOS_6/python/python-2.7.8/bin/python2.7 $SDIR/MergePortal $*
+usage() {
+    echo "CMOMerge/App.sh -p projectTag -b baseProject"
+    echo "    projectTag = string to grep for to find projects to merge"
+    echo "    baseProject = full project ID for the base project of merge"
+}
+
+LABARG=""
+TUMORARG=""
+MERGEARG=""
+while getopts ":b:p:l:t:n:h" opt; do
+    case $opt in
+        b)
+            BASETAG=$OPTARG
+            ;;
+        p)
+            PROJECTTAG=$OPTARG
+            ;;
+        l)
+            LABARG="-l "$OPTARG
+            ;;
+        t)
+            TUMORARG="-t "$OPTARG
+            ;;
+        n)
+            MERGEARG="-n "${OPTARG/-/_}
+            ;;
+        h)
+            usage
+            echo
+            $PYTHON $SDIR/MergePortal -h 2>1 | egrep -v Version
+            exit
+            ;;
+
+    esac
+done
+shift $((OPTIND-1))
+
+if [ "$PROJECTTAG" != "" ]; then
+    echo PROJECTTAG=$PROJECTTAG
+    PROJECTS=$(find -L $REPO -name '*meta_study.txt' \
+        | fgrep $PROJECTTAG \
+        | fgrep -v cbe \
+        | sed 's/.meta.*//' \
+        | sort -r)
+fi
+
+BASEPROJECT=""
+OTHERPROJECTS=""
+if [ "$BASETAG" != "" ]; then
+    i=1
+    for pi in $PROJECTS; do
+        if [[ $pi =~ "${BASETAG}" ]]; then
+            BASEPROJECT=$pi
+        else
+            OTHERPROJECTS="--project "$pi" "$OTHERPROJECTS
+        fi
+    done
+
+    echo BASEPROJECT=$BASEPROJECT
+
+else
+    i=1
+    for pi in $PROJECTS; do
+        echo $pi | perl -pe  "s|${REPO}.||" | awk -v i=$i '{print i":\t"$1}'
+        i=$((i+1))
+    done
+    exit
+fi
+
+echo "-----"
+echo "Pulling and updating repository"
+pushd .
+cd $REPO
+hg pull
+hg update
+popd
+echo $PWD
+echo "done"
+echo "--"
+echo
+
+ARGS="$LABARG $TUMORARG $MERGEARG"
+echo ARGS=$ARGS
+
+$PYTHON $SDIR/MergePortal --project $BASEPROJECT \
+    $OTHERPROJECTS \
+    $ARGS
