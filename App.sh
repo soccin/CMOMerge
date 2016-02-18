@@ -7,7 +7,15 @@ usage() {
     echo "CMOMerge/App.sh -p projectTag -b baseProject"
     echo "    projectTag = string to grep for to find projects to merge"
     echo "    baseProject = full project ID for the base project of merge"
+    echo
+    $PYTHON $SDIR/MergePortal -h 2>1 | egrep -v Version
+
 }
+
+if [ "$#" == "0" ]; then
+    usage
+    exit
+fi
 
 LABARG=""
 TUMORARG=""
@@ -31,8 +39,6 @@ while getopts ":b:p:l:t:n:h" opt; do
             ;;
         h)
             usage
-            echo
-            $PYTHON $SDIR/MergePortal -h 2>1 | egrep -v Version
             exit
             ;;
 

@@ -82,6 +82,8 @@ if not args.tumorType:
 else:
 	tumorType=args.tumorType
 
+tumorType=tumorType.lower()
+
 if not args.labName:
 	labNameSet = set()
 	for project in projectList:
