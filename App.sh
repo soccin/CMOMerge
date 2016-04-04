@@ -20,7 +20,9 @@ fi
 LABARG=""
 TUMORARG=""
 MERGEARG=""
-while getopts ":b:p:l:t:n:h" opt; do
+FORCEARG=""
+rm -f merge_exclude
+while getopts ":b:p:l:t:n:e:hf" opt; do
     case $opt in
         b)
             BASETAG=$OPTARG
@@ -36,6 +38,12 @@ while getopts ":b:p:l:t:n:h" opt; do
             ;;
         n)
             MERGEARG="-n "${OPTARG/-/_}
+            ;;
+        e)
+            echo "/"$OPTARG"$" >>merge_exclude
+            ;;
+        f)
+            FORCEARG="--force"
             ;;
         h)
             usage
@@ -55,6 +63,12 @@ if [ "$PROJECTTAG" != "" ]; then
         | sort -r)
 fi
 
+if [ -e merge_exclude ]; then
+    echo "Need to exclude"
+    cat merge_exclude
+    PROJECTS=$(echo $PROJECTS | tr ' ' '\n' | egrep -vf merge_exclude)
+fi
+
 BASEPROJECT=""
 OTHERPROJECTS=""
 if [ "$BASETAG" != "" ]; then
@@ -71,6 +85,8 @@ if [ "$BASETAG" != "" ]; then
 
 else
     i=1
+    echo "Need to set baseProject"
+    echo
     for pi in $PROJECTS; do
         echo $pi | perl -pe  "s|${REPO}.||" | awk -v i=$i '{print i":\t"$1}'
         i=$((i+1))
@@ -90,7 +106,7 @@ echo "done"
 echo "--"
 echo
 
-ARGS="$LABARG $TUMORARG $MERGEARG"
+ARGS="$LABARG $TUMORARG $MERGEARG $FORCEARG"
 echo ARGS=$ARGS
 
 $PYTHON $SDIR/MergePortal --project $BASEPROJECT \
