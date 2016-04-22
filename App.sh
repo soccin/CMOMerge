@@ -4,7 +4,7 @@ PYTHON=/opt/common/CentOS_6/python/python-2.7.8/bin/python2.7
 REPO=/ifs/res/socci/Work/CMO/CMOMerge/bic-mskcc
 
 usage() {
-    echo "CMOMerge/App.sh -p projectTag -b baseProject"
+    echo "CMOMerge/App.sh -p projectTag -b baseProject -r repository -s python_path"
     echo "    projectTag = string to grep for to find projects to merge"
     echo "    baseProject = full project ID for the base project of merge"
     echo
@@ -22,7 +22,7 @@ TUMORARG=""
 MERGEARG=""
 FORCEARG=""
 rm -f merge_exclude
-while getopts ":b:p:l:t:n:e:hf" opt; do
+while getopts ":b:p:l:t:n:r:s:e:hf" opt; do
     case $opt in
         b)
             BASETAG=$OPTARG
@@ -38,6 +38,12 @@ while getopts ":b:p:l:t:n:e:hf" opt; do
             ;;
         n)
             MERGEARG="-n "${OPTARG/-/_}
+            ;;
+        r)
+            REPO=$OPTARG
+            ;;
+        s)
+            PYTHON=$OPTARG
             ;;
         e)
             echo "/"$OPTARG"$" >>merge_exclude
