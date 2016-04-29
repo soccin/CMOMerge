@@ -158,7 +158,7 @@ if outPath.exists():
 		print >>sys.stderr, "Will not overwrite\n"
 		sys.exit()
 	else:
-		print >>sys.stderr, "\n Overwriting", outPath
+		print "\n Overwriting", outPath
 		import shutil
 		shutil.rmtree(str(outPath))
 
