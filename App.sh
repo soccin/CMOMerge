@@ -116,5 +116,6 @@ ARGS="$LABARG $TUMORARG $MERGEARG $FORCEARG"
 echo ARGS=$ARGS
 
 $PYTHON $SDIR/MergePortal --project $BASEPROJECT \
+    --root $REPO \
     $OTHERPROJECTS \
     $ARGS

@@ -34,6 +34,7 @@ parser.add_argument("--mergeBatches","-m",help="Batches in merge")
 parser.add_argument("--cnaGeneList",help="Set explicit gene list of CNA merge")
 parser.add_argument("--project", action='append', help="project root directory for merge, and optional updated clinical file, seperated by :")
 parser.add_argument("--force","-f", action="store_true", default=False, help="Force overwrite")
+parser.add_argument("--root",default="",help="Set location of hg repository")
 args=parser.parse_args()
 
 if not args.project:
@@ -148,7 +149,11 @@ print "mergeBatches =", mergeBatches
 print "projectList =", projectList
 print "projectTag =", projectTag
 
-outPath=Path("/".join([tumorType,institutionName,labName,projectNumber]))
+if args.root=="":
+	outPath=Path("/".join([tumorType,institutionName,labName,projectNumber]))
+else:
+	outPath=Path("/".join([args.root,tumorType,institutionName,labName,projectNumber]))
+
 caseListDir=Path("case_lists")
 
 
