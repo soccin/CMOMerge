@@ -42,11 +42,28 @@ def getPathsForMergeRegEx(projectList, pattern, recursive=False):
 	return mergeList
 
 
-def rbind(fnameList, unionFields=False):
+def rbind(fnameList, unionFields, sample_to_group):
 	fieldnames=[]
 	data=[]
+	include_samples = set()
+	sample_id_field = None
+	if sample_to_group and len(sample_to_group) > 0:
+		include_samples = set(sample_to_group.keys())
+		if sample_to_group and len(sample_to_group) > 0: # filter samples
+			if fnameList and (fnameList[0].name == "data_clinical.txt" or fnameList[0].name == "data_gene_matrix.txt" or fnameList[0].name.startswith("data_clinical_supp_")):
+				sample_id_field = "SAMPLE_ID"
+			elif fnameList and (fnameList[0].name == "data_mutations_extended.txt" or fnameList[0].name == "data_fusions.txt"):
+				sample_id_field = "Tumor_Sample_Barcode"
+			elif fnameList and fnameList[0].name.endswith("_data_cna_hg19.seg"):
+				sample_id_field = "ID"
+			else:
+				raise ValueError("Need to filter samples for virtual project and do not know sample column name for file " + fnameList[0].name if fnameList else "?")
+				sys.exit()
 	for fname in fnameList:
-		cin=csv.DictReader(smartOpen(fname),delimiter=CSVDELIM)
+		print fname
+		fh=smartOpen(fname)
+		skipComments(fh)
+		cin=csv.DictReader(fh,delimiter=CSVDELIM)
 		if not fieldnames:
 			fieldnames=list(cin.fieldnames)
 		elif fieldnames != cin.fieldnames:
@@ -63,25 +80,39 @@ def rbind(fnameList, unionFields=False):
 				raise ValueError("Inconsistent colnames")
 				sys.exit()
 		for rec in cin:
-			data.append(dict(rec))
+			if not sample_id_field or (sample_id_field in rec and rec[sample_id_field] in include_samples):
+				if sample_id_field and sample_id_field in rec and rec[sample_id_field] in include_samples and (fname.name == "data_clinical.txt" or fnameList[0].name.startswith("data_clinical_supp_")):
+					rec["PATIENT_ID"] = sample_to_group[rec[sample_id_field]]
+				data.append(dict(rec))
 	return (fieldnames,data)
 
 
-def writeTable(table,outfile):
-	fp=smartOpen(str(outfile),mode="w")
-	cout=csv.DictWriter(fp,table[0],delimiter=CSVDELIM,lineterminator="\n")
-	cout.writeheader()
-	for r in table[1]:
-		try:
-			cout.writerow(r)
-		except TypeError:
-			print r
-			raise
-			sys.exit()
+def writeTable(table,outfile,replace_cancer_type=None):
+	if replace_cancer_type and "CANCER_TYPE" in table[0] and "ONCOTREE_CODE" in table[0]:
+		table[0].remove("CANCER_TYPE")
+		for r in table[1]:
+			if "CANCER_TYPE" in r and ("ONCOTREE_CODE" not in r or not r["ONCOTREE_CODE"]):
+				r["ONCOTREE_CODE"] = r["CANCER_TYPE"]
+			if "CANCER_TYPE" in r:
+				del r["CANCER_TYPE"]
+
+	if (len(table[1]) > 0) or (outfile.name == "data_mutations_extended.txt"):
+			fp=smartOpen(str(outfile),mode="w")
+			cout=csv.DictWriter(fp,table[0],delimiter=CSVDELIM,lineterminator="\n")
+			cout.writeheader()
+			for r in table[1]:
+				try:
+					cout.writerow(r)
+				except TypeError:
+					print r
+					raise
+					sys.exit()
+	else:
+		print "WARN: %s will have no data, not writing file" % (outfile)
 
 fixGeneNames={"FAM123B":"AMER1"}
 
-def getCNADataTable(cin):
+def getCNADataTable(cin, include_samples):
 	table=dict()
 	for r in cin:
 		gene=r["Hugo_Symbol"]
@@ -89,10 +120,14 @@ def getCNADataTable(cin):
 			gene=fixGeneNames[gene]
 		rr=dict(r)
 		rr.pop("Hugo_Symbol")
+		if len(include_samples) > 0:
+			for field in r.keys():
+				if field != "Hugo_Symbol" and field not in include_samples:
+					del rr[field]
 		table[gene]=rr
 	return table
 
-def mergeCNAData(fnameList,geneList=None):
+def mergeCNAData(fnameList,geneList=None,include_samples=set()):
 
 	print
 	print "geneList =",geneList
@@ -110,10 +145,24 @@ def mergeCNAData(fnameList,geneList=None):
 			print >>sys.stderr
 			sys.exit()
 		if not header:
-			header = list(cin.fieldnames);
+			if len(include_samples) > 0:
+				header = list(set(["Hugo_Symbol"]) | (set(cin.fieldnames) & include_samples))
+			else:
+				header = list(cin.fieldnames);
 		else:
-			header += cin.fieldnames[1:]
-		cnaTables.append(getCNADataTable(cin))
+			if len(include_samples) > 0:
+				header += list(set(cin.fieldnames[1:]) & include_samples) 
+			else:
+				header += cin.fieldnames[1:]
+		# remove data not in header
+		#if len(include_samples) > 0:
+		#	for row in cin:
+		#		for field in cin.fieldnames[1:]:
+		#			if field not in header:
+		#				print >>sys.stderr, "deleting", field, "from", header
+		#				del row[field]
+		#				del cin.fieldnames[field]
+		cnaTables.append(getCNADataTable(cin, include_samples))
 
 	genes=set()
 	if geneList:
@@ -142,10 +191,24 @@ def mergeCNAData(fnameList,geneList=None):
 		data.append(rr)
 	return (header,data)
 
-def mergeSuppData(fnameList):
+def mergeSuppData(fnameList, sample_to_group):
 	commonSuppFields=set();
 	baseSuppFields=[]
 	dataRaw=[]
+	include_samples = set()
+	if sample_to_group:
+		include_samples = set(sample_to_group.keys())
+		sample_id_field = None
+		if sample_to_group: # filter samples
+			if fname.name == "data_clinical.txt":
+				sample_id_field = "SAMPLE_ID"
+			elif fname.name == "data_mutations_extended.txt":
+				sample_id_field = "Tumor_Sample_Barcode"
+			elif fname.name.endswith("_data_cna_hg19.seg"):
+				sample_id_field = "ID"
+			else:
+				raise ValueError("Need to filter samples for virtual project and do not know sample column name for file " + fname)
+				sys.exit()
 	for fname in fnameList:
 		if fname.exists():
 			cin=csv.DictReader(smartOpen(fname),delimiter=CSVDELIM)
@@ -156,16 +219,22 @@ def mergeSuppData(fnameList):
 			else:
 				commonSuppFields &= set(cin.fieldnames)
 			for r in cin:
-				dataRaw.append(r)
+				if not sample_id_field or r[sample_id_field] in include_samples:
+					if r[sample_id_field] in include_samples:
+						r["PATIENT_ID"] = sample_to_group[r[sample_id_field]]
+					dataRaw.append(r)
 		else:
 			print "Missing supplemental clinical file: ", fname
 			clinicalFile=str(fname).replace("_supp","")
 			cin=csv.DictReader(smartOpen(clinicalFile),delimiter=CSVDELIM)
 			for r in cin:
-				rr=dict()
-				rr["SAMPLE_ID"]=r["SAMPLE_ID"]
-				rr["PATIENT_ID"]=r["PATIENT_ID"]
-				dataRaw.append(rr)
+				if not sample_id_field or r[sample_id_field] in include_samples:
+					rr=dict()
+					if r[sample_id_field] in include_samples:
+						r["PATIENT_ID"] = sample_to_group[r[sample_id_field]]
+					rr["SAMPLE_ID"]=r["SAMPLE_ID"]
+					rr["PATIENT_ID"]=r["PATIENT_ID"]
+					dataRaw.append(rr)
 
 	header=[]
 	for fi in baseSuppFields:
@@ -186,12 +255,16 @@ def mergeSuppData(fnameList):
 
 
 
-def getCaseList(path):
+def getCaseList(path, include_samples):
 	caseList=set()
 	with path.open() as fp:
 		for line in fp:
 			if line.startswith("case_list_ids:"):
-				return set(line.strip().split()[1:])
+				project_samples = set(line.strip().split()[1:])
+				if len(include_samples) > 0:
+					return include_samples & project_samples # return intersection of sets
+				else:
+					return project_samples
 	raise ValueError("Missing case_list_ids line in %s" % path)
 
 caseFileData={
@@ -257,3 +330,14 @@ def resolvePathToFile(path,fnameTuple,templateData=dict()):
 
 	fullPath = path / fname
 	return fullPath
+
+def skipComments(fileHandle):
+	startReadingHere = fileHandle.tell()
+	line = fileHandle.readline()
+	while line.startswith("#"):
+		startReadingHere = fileHandle.tell()
+		line = fileHandle.readline() 
+
+	# not a comment, reset to start of line
+	fileHandle.seek(startReadingHere)
+	return
