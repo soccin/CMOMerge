@@ -246,6 +246,29 @@ for fTuple in rbindFiles:
 	mergedTable=rbind(mergeList,unionFieldNames,sample_to_group)
 	writeTable(mergedTable,mergedFile,replace_cancer_type=(fTuple[0]=="data_clinical.txt"))
 
+#
+# Post process the merged SEG file to remove any normal
+# samples from it
+#
+
+segFileTmpl=getFileTemplates("_data_cna_hg19.seg")[0]
+clinFileTmpl=getFileTemplates("data_clinical.txt")[0]
+
+(mergeList,mergedSegFile)=getPathsForMerge(projectList,studyId,outPath,segFileTmpl)
+(mergeList,mergedClinFile)=getPathsForMerge(projectList,studyId,outPath,clinFileTmpl)
+
+import pandas
+
+clinDat=pandas.read_csv(str(mergedClinFile),sep="\t")
+tumors=set(clinDat.SAMPLE_ID)
+segFile=pandas.read_csv(str(mergedSegFile),sep="\t")
+segFile=segFile[segFile.ID.isin(tumors)]
+segFile.to_csv(str(mergedSegFile),sep="\t",index=False)
+
+#
+#
+#
+
 write_gene_panel_files(studyId,outPath,projectList,include_samples)
 
 cnaTuple=("data_CNA.txt",None)
@@ -257,7 +280,7 @@ writeTable(mergedTable,mergedFile)
 # use the fields in it, rather than just using that file as the final file
 newMetaStudyData=dict()
 if not args.virtualGroupFile and args.metaStudyFile:
-	newMetaStudyData=parseMetaData(args.metaStudyFile) 
+	newMetaStudyData=parseMetaData(args.metaStudyFile)
 
 today=str(datetime.date.today())
 newData=dict()
